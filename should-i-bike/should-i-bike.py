@@ -41,11 +41,7 @@ class Should_I_Bike:
 
     @zip.setter
     def zip(self, value):
-        self.db.updateSetting(
-            'Zip',
-            value,
-            description='Zip code for the forecast.'
-        )
+        self.db.updateSetting('Zip', value)
         self.settings = self.db.loadSettings()
 
     @property
@@ -57,11 +53,7 @@ class Should_I_Bike:
 
     @country.setter
     def country(self, value):
-        self.db.updateSetting(
-            'Country',
-            value,
-            description='I do not remember what this does.  Best leave it be'
-        )
+        self.db.updateSetting('Country', value)
         self.settings = self.db.loadSettings()
 
     @property
@@ -73,11 +65,7 @@ class Should_I_Bike:
 
     @hoursReturned.setter
     def hoursReturned(self, value):
-        self.db.updateSetting(
-            'Hours Returned',
-            value,
-            description="Number of hours to return in the hourly forecast."
-        )
+        self.db.updateSetting('Hours Returned', value)
 
     @property
     def defaultDeparture(self):
@@ -88,11 +76,7 @@ class Should_I_Bike:
 
     @defaultDeparture.setter
     def default_departure(self, value):
-        self.db.updateSetting(
-            'Default Departure',
-            value,
-            'Default departure time. 00-24'
-        )
+        self.db.updateSetting('Default Departure', value)
 
     @property
     def defaultReturn(self):
@@ -103,11 +87,7 @@ class Should_I_Bike:
 
     @defaultReturn.setter
     def default_return(self, value):
-        self.db.updateSetting(
-            'Default Return',
-            value,
-            'Default return time. 00-24'
-        )
+        self.db.updateSetting('Default Return', value)
 
     def runProgram(self):
         """ Runs the program """

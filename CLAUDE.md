@@ -20,7 +20,7 @@ Dependencies: `pip install -r requirements.txt` (installs `noaa_sdk` and `tabula
 
 - **`Weather`** (`weather.py`) — fetches NOAA hourly and grid forecasts, caches them for 60 minutes. The grid forecast (`forecastGridData`) provides extra fields (wind gust, visibility) that get merged into the hourly forecast via `addGridElementToHourly`. Unit conversions (°C→°F, km/h→mph, m→yards, angle→cardinal direction) are registered in `self.conversions` and applied automatically by `getForecastValue`.
 
-- **`DB`** (`db.py`) — wraps SQLite at `should-i-bike/should-i-bike.db`. **Important:** `build_db()` drops and recreates all tables on every startup, so rules entered during a session do not persist to the next run. Settings are re-seeded from defaults each time as well.
+- **`DB`** (`db.py`) — wraps SQLite at `should-i-bike/should-i-bike.db`. `build_db()` uses `CREATE TABLE IF NOT EXISTS` so data persists across runs. Default rule types and settings are only seeded when the tables are empty.
 
 - **`CLI_Interface`** (`cli_interface.py`) — all user I/O; uses `tabulate` with `fancy_grid` for tables.
 
@@ -37,7 +37,4 @@ Rules are tied to either the `Departure` or `Return` trip time, so elements are 
 
 ## Known issues / gotchas
 
-- **DB reset on startup**: `build_db` unconditionally drops all tables, so no data survives between runs. Rules and custom settings must be re-entered each session.
-- **Timezone hardcoded**: `getForecastValue` parses times with a fixed `-05:00` offset (`weather.py:224`), which will be wrong outside US Central time.
-- **`updateSetting` signature mismatch**: The property setters in `should-i-bike.py` call `self.db.updateSetting(name, value, description=...)` with a `description` keyword arg, but `DB.updateSetting` only accepts `(settingName, value)` — the description is silently ignored (and would raise `TypeError` if passed positionally).
-- **`rule_types` missing `weather_element` column**: `db.py:73` creates `rule_types` with only a `name` column, but `getRules` queries `rt.weather_element` — this will error when rules with groups are evaluated.
+None — all previously noted bugs have been fixed.

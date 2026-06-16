@@ -220,8 +220,10 @@ class Weather():
         Time is an hour in 24-hour time (0-24)
         """
 
+        tz_raw = datetime.now().astimezone().strftime('%z')
+        tz_str = tz_raw[:3] + ':' + tz_raw[3:]
         targetTime = datetime.strptime(
-            date+'T'+str(time)+"-05:00",
+            date+'T'+str(time)+tz_str,
             '%m/%d/%YT%H%z'
         )
 

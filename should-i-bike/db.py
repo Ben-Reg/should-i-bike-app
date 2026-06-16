@@ -24,29 +24,17 @@ class DB():
         Creates the should-i-bike database and all its tables
         """
 
-        # Close the connection so we can drop the tables if they exist
-        # and rebuild them
-
-        self.con.close()
-        self.con = sqlite3.connect(self.dbPath)
-        self.cur = self.con.cursor()
-
-        # Drop tables
-
-        self.cur.execute("DROP TABLE IF EXISTS rule_types")
-        self.cur.execute("DROP TABLE IF EXISTS rules")
-        self.cur.execute("DROP TABLE IF EXISTS settings")
-
-        # Create tables
+        # Create tables if they don't already exist (preserves data across runs)
 
         self.cur.execute("""
-            CREATE TABLE rule_types(
-                name
+            CREATE TABLE IF NOT EXISTS rule_types(
+                name,
+                weather_element
                 )
             """)
 
         self.cur.execute("""
-            CREATE TABLE rules(
+            CREATE TABLE IF NOT EXISTS rules(
                 name,
                 description,
                 rule_type_id,
@@ -59,23 +47,40 @@ class DB():
         """)
 
         self.cur.execute("""
-            CREATE TABLE settings(
+            CREATE TABLE IF NOT EXISTS settings(
                 name,
                 value,
                 description
             )
         """)
 
-        # Populate default rule types
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS rule_groups(
+                rule_id,
+                operator
+            )
+        """)
 
         self.cur.execute("""
-            INSERT INTO rule_types VALUES
-            ('Temperature'),
-            ('Wind Speed'),
-            ('Wind Direction'),
-            ('Wind Gust'),
-            ('Visibility'),
-            ('Rain Chance')
+            CREATE TABLE IF NOT EXISTS rule_group_elements(
+                rule_group_id,
+                rule_type_id,
+                operator,
+                value
+            )
+        """)
+
+        # Populate default rule types (only if table is empty)
+
+        self.cur.execute("""
+            INSERT OR IGNORE INTO rule_types SELECT * FROM (
+                SELECT 'Temperature', 'temperature' UNION ALL
+                SELECT 'Wind Speed', 'windSpeed' UNION ALL
+                SELECT 'Wind Direction', 'windDirection' UNION ALL
+                SELECT 'Wind Gust', 'windGust' UNION ALL
+                SELECT 'Visibility', 'visibility' UNION ALL
+                SELECT 'Rain Chance', 'probabilityOfPrecipitation'
+            ) WHERE NOT EXISTS (SELECT 1 FROM rule_types)
         """)
         self.con.commit()
 
@@ -87,20 +92,13 @@ class DB():
         # self.should_i_bike.hoursReturned
 
         self.cur.execute("""
-            INSERT INTO settings VALUES
-            ('Zip','67114','Zip code for the weather forecast'),
-            (
-                'Country',
-                'US',
-                'I do not remember what this does. Best leave it be.'
-            ),
-            ('Default Departure',7,'Default departure time. 00-24'),
-            ('Default Return',17,'Default return time. 00-24'),
-            (
-                'Hours Returned',
-                48,
-                'Number of hours to return in the hourly forecast'
-            )
+            INSERT INTO settings SELECT * FROM (
+                SELECT 'Zip','67114','Zip code for the weather forecast' UNION ALL
+                SELECT 'Country','US','I do not remember what this does. Best leave it be.' UNION ALL
+                SELECT 'Default Departure',7,'Default departure time. 00-24' UNION ALL
+                SELECT 'Default Return',17,'Default return time. 00-24' UNION ALL
+                SELECT 'Hours Returned',48,'Number of hours to return in the hourly forecast'
+            ) WHERE NOT EXISTS (SELECT 1 FROM settings)
         """)
         self.con.commit()
 
