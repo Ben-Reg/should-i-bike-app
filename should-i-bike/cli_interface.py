@@ -325,6 +325,7 @@ class CLI_Interface():
 
         print("\n")
         print(tabulate(scoreboard, headers='firstrow', tablefmt='fancy_grid'))
+        print("\n")
 
         print("Relevant Rules")
 

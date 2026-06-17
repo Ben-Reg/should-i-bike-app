@@ -235,8 +235,6 @@ class Should_I_Bike:
 
         for i in rules:
 
-            print("\nRule", i['name'])
-
             if i['tripTime'] == 'Return':
                 time = r
             else:
@@ -245,7 +243,6 @@ class Should_I_Bike:
             rResult = True
 
             for g in i['groups']:
-                print("\nGROUP")
                 if g['operator'] == "AND":
                     gResult = True
                     for e in g['elements']:
@@ -275,9 +272,6 @@ class Should_I_Bike:
                     rResult = False
                     break
 
-                print("\nGroup", g['operator'], gResult)
-            print(f"{i['name']} is {rResult}")
-
             if rResult is True:
                 score += i['weight']
                 relevantRules.append(i)
@@ -303,8 +297,6 @@ class Should_I_Bike:
             date=date,
             time=time
         )
-
-        print(f"Element: {element['name']} Value: {forecastValue}")
 
         # Take this out later?
         result = "None"
