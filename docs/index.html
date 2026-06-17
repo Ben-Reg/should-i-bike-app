@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2e7d32" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Should I Bike?</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ── HOME ─────────────────────────────────────────────────────────────── -->
+  <main v-if="route === '/'">
+    <h1>Should I Bike?</h1>
+
+    <div class="card">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" v-model="selectedDate" />
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <label>Depart (hour 0-24)</label>
+          <input type="number" v-model.number="departureHour" min="0" max="24" />
+        </div>
+        <div class="field">
+          <label>Return (hour 0-24)</label>
+          <input type="number" v-model.number="returnHour" min="0" max="24" />
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" @click="checkBike" :disabled="loading">
+        {{ loading ? 'Checking…' : 'Check' }}
+      </button>
+    </div>
+
+    <div class="error" v-if="error">{{ error }}</div>
+  </main>
+
+  <!-- ── RESULT ─────────────────────────────────────────────────────────────── -->
+  <main v-else-if="route === '/result'">
+    <button class="btn btn-ghost" @click="navigate('/')">← Back</button>
+
+    <div v-if="result" class="mt-8">
+      <div class="banner" :class="result.bike ? 'bike' : 'drive'">
+        <div class="decision">{{ result.bike ? '🚲 Bike!' : '🚗 Drive' }}</div>
+        <div class="score">Score: {{ result.score }} ({{ result.bike ? 'under 10 → bike' : '10+ → drive' }})</div>
+      </div>
+
+      <div class="card" v-if="result.relevantRules.length">
+        <h2>Triggered Rules</h2>
+        <table class="data-table">
+          <thead><tr><th>Rule</th><th>Trip</th><th>Weight</th></tr></thead>
+          <tbody>
+            <tr v-for="r in result.relevantRules" :key="r.id">
+              <td>{{ r.name }}</td>
+              <td><span class="pill" :class="r.tripTime?.toLowerCase()">{{ r.tripTime }}</span></td>
+              <td>+{{ r.weight }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card muted" v-else>No rules triggered.</div>
+
+      <div class="card" v-if="travelConditions">
+        <h2>Conditions</h2>
+        <div class="conditions-grid">
+          <div class="cg-header">—</div>
+          <div class="cg-col"><div class="cg-label">Departure ({{ departureHour }}:00)</div></div>
+          <div class="cg-col"><div class="cg-label">Return ({{ returnHour }}:00)</div></div>
+
+          <template v-for="(item, i) in travelConditions.departure" :key="i">
+            <div style="grid-column:1/-1; font-size:12px; color:var(--muted); padding: 8px 0 2px; border-top: 1px solid var(--border); margin-top:4px;">{{ item.label }}</div>
+            <div class="cg-value">{{ travelConditions.departure[i].value }}</div>
+            <div class="cg-value">{{ travelConditions.return[i].value }}</div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── FORECAST ───────────────────────────────────────────────────────────── -->
+  <main v-else-if="route === '/forecast'">
+    <h1>Forecast</h1>
+    <div class="error" v-if="error">{{ error }}</div>
+    <div class="loading" v-if="loading">Loading forecast…</div>
+    <div v-else>
+      <div class="fc-card" v-for="p in forecast" :key="p.startTime">
+        <div class="fc-time">{{ formatTime(p.startTime) }}</div>
+        <div>
+          <div class="fc-label">Temp</div>
+          <div class="fc-val">{{ p.temperature }}°F</div>
+        </div>
+        <div>
+          <div class="fc-label">Rain</div>
+          <div class="fc-val">{{ p.probabilityOfPrecipitation }}%</div>
+        </div>
+        <div>
+          <div class="fc-label">Wind</div>
+          <div class="fc-val">{{ p.windSpeed }} {{ p.windDirection }}</div>
+        </div>
+        <div>
+          <div class="fc-label">Gust</div>
+          <div class="fc-val">{{ p.windGust ?? '—' }} mph</div>
+        </div>
+        <div>
+          <div class="fc-label">Visibility</div>
+          <div class="fc-val">{{ p.visibility ?? '—' }} yds</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── RULES LIST ──────────────────────────────────────────────────────────── -->
+  <main v-else-if="route === '/rules'">
+    <div class="row-between">
+      <h1>Rules</h1>
+      <button class="btn btn-primary btn-sm" @click="newRuleModal = true; newRuleForm = { name:'', tripTime:'Departure', weight:0 }">+ New</button>
+    </div>
+
+    <div class="card" v-if="!rules.length"><span class="muted">No rules yet. Tap + New to create one.</span></div>
+
+    <div class="card" v-for="r in rules" :key="r.id" style="cursor:pointer" @click="navigate('/rules/'+r.id, {id:r.id})">
+      <div class="row-between">
+        <div>
+          <div style="font-weight:600">{{ r.name }}</div>
+          <div class="tag">Weight: {{ r.weight }}</div>
+        </div>
+        <span class="pill" :class="r.trip_time?.toLowerCase()">{{ r.trip_time }}</span>
+      </div>
+    </div>
+
+    <!-- new rule modal -->
+    <div class="modal-overlay" v-if="newRuleModal" @click.self="newRuleModal=false">
+      <div class="modal-sheet">
+        <div class="modal-title">New Rule</div>
+        <div class="field"><label>Name</label><input v-model="newRuleForm.name" placeholder="e.g. Rain Rule" /></div>
+        <div class="field">
+          <label>Trip Time</label>
+          <select v-model="newRuleForm.tripTime">
+            <option>Departure</option>
+            <option>Return</option>
+          </select>
+        </div>
+        <div class="field"><label>Weight (added to score if triggered)</label><input type="number" v-model.number="newRuleForm.weight" /></div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="newRuleModal=false">Cancel</button>
+          <button class="btn btn-primary" @click="submitNewRule">Create</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── RULE DETAIL ─────────────────────────────────────────────────────────── -->
+  <main v-else-if="route === '/rules/:id'">
+    <button class="btn btn-ghost" @click="navigate('/rules')">← Rules</button>
+
+    <div v-if="currentRule" class="mt-8">
+      <div class="card">
+        <div class="row-between">
+          <div>
+            <h2 style="margin-bottom:4px">{{ currentRule.name }}</h2>
+            <div class="tag">
+              <span class="pill" :class="currentRule.trip_time?.toLowerCase()">{{ currentRule.trip_time }}</span>
+              &nbsp;Weight: {{ currentRule.weight }}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" @click="editRuleForm={name:currentRule.name, tripTime:currentRule.trip_time, weight:currentRule.weight}; editRuleModal=true">Edit</button>
+            <button class="btn btn-danger btn-sm" @click="submitDeleteRule(currentRule.id)">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row-between mt-16" style="margin-bottom:8px">
+        <h2>Groups</h2>
+        <button class="btn btn-primary btn-sm" @click="groupForm={id:null,operator:'AND'}; groupModal=true">+ Group</button>
+      </div>
+
+      <div v-if="!ruleGroups.length" class="card muted">No groups yet. A rule with no groups never triggers.</div>
+
+      <div class="group-card" v-for="g in ruleGroups" :key="g.id">
+        <div class="group-header">
+          <span class="group-op">{{ g.operator }}</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" @click="groupForm={id:g.id,operator:g.operator}; groupModal=true">Edit</button>
+            <button class="btn btn-danger btn-sm" @click="submitDeleteGroup(g.id)">Delete</button>
+            <button class="btn btn-primary btn-sm" @click="openAddElement(g.id)">+ Element</button>
+          </div>
+        </div>
+        <div class="group-body">
+          <div v-if="!g.elements.length" class="muted" style="padding:10px 0;font-size:13px">No elements — add one above.</div>
+          <div class="element-row" v-for="el in g.elements" :key="el.id">
+            <div class="element-text">
+              <strong>{{ el.typeName }}</strong> {{ el.operator }} <strong>{{ el.value }}</strong>
+            </div>
+            <div class="element-actions">
+              <button class="btn btn-outline btn-sm" @click="openEditElement(el, g.id)">Edit</button>
+              <button class="btn btn-danger btn-sm" @click="submitDeleteElement(el.id)">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- edit rule modal -->
+    <div class="modal-overlay" v-if="editRuleModal" @click.self="editRuleModal=false">
+      <div class="modal-sheet">
+        <div class="modal-title">Edit Rule</div>
+        <div class="field"><label>Name</label><input v-model="editRuleForm.name" /></div>
+        <div class="field">
+          <label>Trip Time</label>
+          <select v-model="editRuleForm.tripTime">
+            <option>Departure</option>
+            <option>Return</option>
+          </select>
+        </div>
+        <div class="field"><label>Weight</label><input type="number" v-model.number="editRuleForm.weight" /></div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="editRuleModal=false">Cancel</button>
+          <button class="btn btn-primary" @click="submitEditRule">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- group modal -->
+    <div class="modal-overlay" v-if="groupModal" @click.self="groupModal=false">
+      <div class="modal-sheet">
+        <div class="modal-title">{{ groupForm.id ? 'Edit Group' : 'New Group' }}</div>
+        <div class="field">
+          <label>Logic Operator</label>
+          <select v-model="groupForm.operator">
+            <option>AND</option>
+            <option>OR</option>
+          </select>
+        </div>
+        <p class="muted" style="margin-bottom:12px">
+          <strong>AND</strong>: all elements must pass.<br>
+          <strong>OR</strong>: any element passing is enough.
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="groupModal=false">Cancel</button>
+          <button class="btn btn-primary" @click="submitGroup">{{ groupForm.id ? 'Save' : 'Create' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- element modal -->
+    <div class="modal-overlay" v-if="elementModal" @click.self="elementModal=false">
+      <div class="modal-sheet">
+        <div class="modal-title">{{ elementForm.id ? 'Edit Element' : 'New Element' }}</div>
+        <div class="field">
+          <label>Weather Metric</label>
+          <select v-model.number="elementForm.ruleTypeId">
+            <option v-for="rt in ruleTypes" :key="rt.id" :value="rt.id">{{ rt.name }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Operator</label>
+          <select v-model="elementForm.operator">
+            <option v-for="op in operators" :key="op">{{ op }}</option>
+          </select>
+        </div>
+        <div class="field"><label>Value</label><input v-model="elementForm.value" placeholder="e.g. 20, N, NNE" /></div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="elementModal=false">Cancel</button>
+          <button class="btn btn-primary" @click="submitElement">{{ elementForm.id ? 'Save' : 'Add' }}</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── SETTINGS ────────────────────────────────────────────────────────────── -->
+  <main v-else-if="route === '/settings'">
+    <h1>Settings</h1>
+    <div class="card">
+      <div v-for="(s, name) in settingsForm" :key="name" class="field">
+        <label>{{ name }}</label>
+        <input v-model="s.value" />
+        <div class="muted" style="margin-top:3px">{{ s.description }}</div>
+      </div>
+      <button class="btn btn-primary btn-full" @click="saveSettings">Save Settings</button>
+    </div>
+    <div class="error" v-if="error">{{ error }}</div>
+  </main>
+
+  <!-- ── BOTTOM NAV ──────────────────────────────────────────────────────────── -->
+  <nav>
+    <button @click="navigate('/')" :class="{ active: route === '/' || route === '/result' }">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Check
+    </button>
+    <button @click="navigate('/forecast')" :class="{ active: route === '/forecast' }">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+      Forecast
+    </button>
+    <button @click="navigate('/rules')" :class="{ active: route === '/rules' || route === '/rules/:id' }">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Rules
+    </button>
+    <button @click="navigate('/settings')" :class="{ active: route === '/settings' }">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
+
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/dexie@3/dist/dexie.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+</body>
+</html>
