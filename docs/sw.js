@@ -1,4 +1,4 @@
-const CACHE = 'should-i-bike-v1';
+const CACHE = 'should-i-bike-v2';
 const ASSETS = [
   './',
   './index.html',
