@@ -121,6 +121,13 @@
       <h1>Rules</h1>
       <button class="btn btn-primary btn-sm" @click="newRuleModal = true; newRuleForm = { name:'', tripTime:'Departure', weight:0 }">+ New</button>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-outline btn-sm" @click="triggerImport">Import</button>
+      <button class="btn btn-outline btn-sm" @click="doExport">Export</button>
+    </div>
+    <input type="file" accept=".json" style="display:none" ref="importFileRef" @change="handleImportFile" />
+    <div class="error" v-if="importError">{{ importError }}</div>
+    <div v-if="importSuccess" style="background:#e8f5e9;color:var(--primary);padding:12px;border-radius:8px;margin-bottom:12px;font-size:14px">{{ importSuccess }}</div>
 
     <div class="card" v-if="!rules.length"><span class="muted">No rules yet. Tap + New to create one.</span></div>
 

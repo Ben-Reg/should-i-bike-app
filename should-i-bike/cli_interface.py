@@ -433,3 +433,69 @@ class CLI_Interface():
             headers='firstrow',
             tablefmt='fancy_grid'
         ))
+
+    def exportRules(self, rules):
+        """ Prompts for a file path and writes rules to a JSON file. """
+        import json
+        from datetime import datetime as dt
+
+        if not rules:
+            print("No rules to export.")
+            return
+
+        path = input("Enter the file path to export to (e.g. rules.json): ").strip()
+        if not path:
+            print("Export cancelled.")
+            return
+
+        payload = {
+            "version": 1,
+            "exported_at": dt.now().isoformat(timespec='seconds'),
+            "rules": rules
+        }
+
+        try:
+            with open(path, 'w') as f:
+                json.dump(payload, f, indent=2)
+            print(f"Exported {len(rules)} rule(s) to {path}.")
+        except OSError as e:
+            print(f"Export failed: {e}")
+
+    def importRules(self, db):
+        """ Prompts for a file path and imports rules from a JSON file. """
+        import json
+
+        path = input("Enter the file path to import from (e.g. rules.json): ").strip()
+        if not path:
+            print("Import cancelled.")
+            return
+
+        try:
+            with open(path, 'r') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            print(f"File not found: {path}")
+            return
+        except json.JSONDecodeError as e:
+            print(f"Invalid JSON: {e}")
+            return
+
+        if not isinstance(data, dict) or 'rules' not in data:
+            print("Invalid format: missing 'rules' key.")
+            return
+
+        rules = data['rules']
+        if not isinstance(rules, list):
+            print("Invalid format: 'rules' must be a list.")
+            return
+
+        if len(rules) == 0:
+            print("The file contains no rules to import.")
+            return
+
+        result = db.importRules(rules)
+
+        for warning in result['skipped_elements']:
+            print(f"Warning: {warning}")
+
+        print(f"Import complete: {result['imported']} rule(s) imported.")

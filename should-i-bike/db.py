@@ -258,6 +258,7 @@ class DB():
             (ruleGroup['ruleID'], ruleGroup['operator'])
         )
         self.con.commit()
+        return self.cur.lastrowid
 
     def editRuleGroup(self, groupID, ruleGroup):
         """
@@ -437,6 +438,7 @@ class DB():
             )
         )
         self.con.commit()
+        return self.cur.lastrowid
 
     def deleteRule(self, ruleID):
         """ Deletes a rule. """
@@ -547,3 +549,66 @@ class DB():
             })
 
         return rules
+
+    def exportRules(self):
+        """ Returns all rules serialized to the portable export format. """
+        raw = self.getRules()
+        export = []
+        for r in raw:
+            groups = []
+            for g in r['groups']:
+                elements = []
+                for e in g['elements']:
+                    elements.append({
+                        'rule_type': e['name'],
+                        'operator':  e['operator'],
+                        'value':     e['value']
+                    })
+                groups.append({'operator': g['operator'], 'elements': elements})
+            export.append({
+                'name':      r['name'],
+                'trip_time': r['tripTime'],
+                'weight':    r['weight'],
+                'groups':    groups
+            })
+        return export
+
+    def importRules(self, rules):
+        """
+        Imports rules from the portable export format. Adds to existing rules.
+        Returns {'imported': int, 'skipped_elements': [str]}.
+        """
+        valid_types = set(self.getRuleTypes())
+        imported = 0
+        skipped_elements = []
+
+        for rule_data in rules:
+            rule_id = self.saveRule({
+                'name':     rule_data['name'],
+                'tripTime': rule_data['trip_time'],
+                'weight':   int(rule_data['weight'])
+            })
+
+            for group_data in rule_data.get('groups', []):
+                group_id = self.saveRuleGroup({
+                    'ruleID':   rule_id,
+                    'operator': group_data['operator']
+                })
+
+                for elem_data in group_data.get('elements', []):
+                    rt_name = elem_data['rule_type']
+                    if rt_name not in valid_types:
+                        skipped_elements.append(
+                            f"Rule '{rule_data['name']}': unknown rule_type '{rt_name}' skipped"
+                        )
+                        continue
+                    self.createGroupElement({
+                        'groupID':  group_id,
+                        'ruleType': rt_name,
+                        'operator': elem_data['operator'],
+                        'value':    str(elem_data['value'])
+                    })
+
+            imported += 1
+
+        return {'imported': imported, 'skipped_elements': skipped_elements}

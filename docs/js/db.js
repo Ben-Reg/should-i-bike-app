@@ -125,3 +125,62 @@ async function getRulesWithGroups() {
   }
   return rules;
 }
+
+async function exportRulesData() {
+  const rules = await db.rules.toArray();
+  const out = [];
+  for (const rule of rules) {
+    const groups = await db.rule_groups.where('rule_id').equals(rule.id).toArray();
+    const groupsOut = [];
+    for (const g of groups) {
+      const elements = await db.rule_group_elements.where('rule_group_id').equals(g.id).toArray();
+      const elemsOut = [];
+      for (const e of elements) {
+        const rt = await db.rule_types.get(e.rule_type_id);
+        if (!rt) continue;
+        elemsOut.push({ rule_type: rt.name, operator: e.operator, value: e.value });
+      }
+      groupsOut.push({ operator: g.operator, elements: elemsOut });
+    }
+    out.push({ name: rule.name, trip_time: rule.trip_time, weight: rule.weight, groups: groupsOut });
+  }
+  return out;
+}
+
+async function importRulesData(rules) {
+  const allTypes = await db.rule_types.toArray();
+  const typeMap = {};
+  for (const rt of allTypes) typeMap[rt.name] = rt.id;
+
+  let imported = 0;
+  const warnings = [];
+
+  for (const ruleData of rules) {
+    const ruleId = await db.rules.add({
+      name:      ruleData.name,
+      trip_time: ruleData.trip_time,
+      weight:    Number(ruleData.weight)
+    });
+
+    for (const groupData of (ruleData.groups || [])) {
+      const groupId = await db.rule_groups.add({ rule_id: ruleId, operator: groupData.operator });
+
+      for (const elemData of (groupData.elements || [])) {
+        const rtId = typeMap[elemData.rule_type];
+        if (rtId === undefined) {
+          warnings.push(`Rule '${ruleData.name}': unknown rule_type '${elemData.rule_type}' skipped`);
+          continue;
+        }
+        await db.rule_group_elements.add({
+          rule_group_id: groupId,
+          rule_type_id:  rtId,
+          operator:      elemData.operator,
+          value:         String(elemData.value)
+        });
+      }
+    }
+    imported++;
+  }
+
+  return { imported, warnings };
+}

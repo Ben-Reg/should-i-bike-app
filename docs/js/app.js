@@ -112,10 +112,73 @@ createApp({
     }
 
     // ── rules screen ─────────────────────────────────────────────────────────
-    const rules = ref([]);
+    const rules         = ref([]);
+    const importError   = ref('');
+    const importSuccess = ref('');
+    const importFileRef = ref(null);
 
     async function loadRulesList() {
       rules.value = await loadRules();
+    }
+
+    async function doExport() {
+      const rulesData = await exportRulesData();
+      if (!rulesData.length) {
+        alert('No rules to export.');
+        return;
+      }
+      const payload = {
+        version:     1,
+        exported_at: new Date().toISOString().slice(0, 19),
+        rules:       rulesData
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'should-i-bike-rules.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function triggerImport() {
+      importError.value   = '';
+      importSuccess.value = '';
+      importFileRef.value.value = '';
+      importFileRef.value.click();
+    }
+
+    async function handleImportFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      let data;
+      try {
+        data = JSON.parse(await file.text());
+      } catch (e) {
+        importError.value = 'Invalid JSON file: ' + e.message;
+        return;
+      }
+
+      if (!data || !Array.isArray(data.rules)) {
+        importError.value = "Invalid format: missing 'rules' array.";
+        return;
+      }
+
+      if (data.rules.length === 0) {
+        importError.value = 'The file contains no rules to import.';
+        return;
+      }
+
+      try {
+        const result = await importRulesData(data.rules);
+        await loadRulesList();
+        let msg = `Imported ${result.imported} rule(s).`;
+        if (result.warnings.length) msg += ' Warnings: ' + result.warnings.join('; ');
+        importSuccess.value = msg;
+      } catch (e) {
+        importError.value = 'Import failed: ' + e.message;
+      }
     }
 
     // ── rule detail screen ───────────────────────────────────────────────────
@@ -233,6 +296,8 @@ createApp({
     // ── route watcher ─────────────────────────────────────────────────────────
     watch(route, async (r) => {
       error.value = '';
+      importError.value   = '';
+      importSuccess.value = '';
       if (r === '/forecast')  await loadForecast();
       if (r === '/rules')     await loadRulesList();
       if (r === '/rules/:id') await loadRuleDetail(routeParams.value.id);
@@ -258,7 +323,8 @@ createApp({
       // forecast
       forecast, formatTime,
       // rules list
-      rules,
+      rules, importError, importSuccess, importFileRef,
+      doExport, triggerImport, handleImportFile,
       // rule detail
       currentRule, ruleGroups,
       editRuleModal, editRuleForm, submitEditRule, submitDeleteRule,

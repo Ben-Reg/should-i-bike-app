@@ -141,6 +141,8 @@ class Should_I_Bike:
                 "Edit Rule (name, time, weight)",
                 "Edit Rule Groupings and Elements",
                 "Delete Rule",
+                "Export Rules",
+                "Import Rules",
                 "Back"
             ]
             menuSelection = self.interface.menuSelection(ruleMenu)
@@ -160,6 +162,11 @@ class Should_I_Bike:
             elif menuSelection == "Delete Rule":
                 ruleID = self.interface.selectID(ruleIDs)
                 self.db.deleteRule(ruleID)
+            elif menuSelection == "Export Rules":
+                rules = self.db.exportRules()
+                self.interface.exportRules(rules)
+            elif menuSelection == "Import Rules":
+                self.interface.importRules(self.db)
 
     def manageRuleGroups(self, ruleID):
         """
