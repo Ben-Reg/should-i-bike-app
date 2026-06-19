@@ -26,15 +26,17 @@ createApp({
     });
 
     // ── global state ─────────────────────────────────────────────────────────
-    const settings   = ref({});
-    const ruleTypes  = ref([]);
-    const loading    = ref(false);
-    const error      = ref('');
+    const settings       = ref({});
+    const ruleTypes      = ref([]);
+    const loading        = ref(false);
+    const error          = ref('');
+    const settingsLoaded = ref(false);
 
     async function loadGlobals() {
       await seedDefaults();
       settings.value  = await loadSettings();
       ruleTypes.value = await getRuleTypes();
+      settingsLoaded.value = true;
     }
 
     // ── home screen ──────────────────────────────────────────────────────────
@@ -266,8 +268,28 @@ createApp({
     }
 
     // new rule
-    const newRuleModal = ref(false);
-    const newRuleForm  = ref({ name: '', tripTime: 'Departure', weight: 0 });
+    const newRuleModal    = ref(false);
+    const newRuleForm     = ref({ name: '', tripTime: 'Departure', weight: 0 });
+    const creatingExamples = ref(false);
+
+    async function createExampleRules() {
+      creatingExamples.value = true;
+      try {
+        await importRulesData([
+          {
+            name: 'Rain Risk', trip_time: 'Departure', weight: 10,
+            groups: [{ operator: 'AND', elements: [{ rule_type: 'Rain Chance', operator: '>=', value: '50' }] }]
+          },
+          {
+            name: 'High Wind', trip_time: 'Departure', weight: 10,
+            groups: [{ operator: 'AND', elements: [{ rule_type: 'Wind Speed', operator: '>=', value: '20' }] }]
+          }
+        ]);
+        await loadRulesList();
+      } finally {
+        creatingExamples.value = false;
+      }
+    }
 
     async function submitNewRule() {
       const id = await saveRule(newRuleForm.value);
@@ -321,7 +343,7 @@ createApp({
 
     return {
       route, routeParams, navigate,
-      settings, ruleTypes, loading, error,
+      settings, ruleTypes, loading, error, settingsLoaded,
       // home
       selectedDate, departureHour, returnHour, result, travelConditions, checkBike, tomorrow,
       // forecast
@@ -334,7 +356,7 @@ createApp({
       editRuleModal, editRuleForm, submitEditRule, submitDeleteRule,
       groupModal, groupForm, submitGroup, submitDeleteGroup,
       elementModal, elementForm, operators, openAddElement, openEditElement, submitElement, submitDeleteElement,
-      newRuleModal, newRuleForm, submitNewRule,
+      newRuleModal, newRuleForm, submitNewRule, creatingExamples, createExampleRules,
       // settings
       settingsForm, saveSettings,
     };
