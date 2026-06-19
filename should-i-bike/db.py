@@ -85,7 +85,7 @@ class DB():
         self.con.commit()
 
         # Populate default settings
-        # self.should_i_bike.zip = '67114'
+        # self.should_i_bike.zip = ''
         # self.should_i_bike.country = 'US'
         # self.should_i_bike.defaultDeparture = 7
         # self.should_i_bike.defaultReturn = 17
@@ -93,7 +93,7 @@ class DB():
 
         self.cur.execute("""
             INSERT INTO settings SELECT * FROM (
-                SELECT 'Zip','67114','Zip code for the weather forecast' UNION ALL
+                SELECT 'Zip','','Zip code for the weather forecast' UNION ALL
                 SELECT 'Country','US','I do not remember what this does. Best leave it be.' UNION ALL
                 SELECT 'Default Departure',7,'Default departure time. 00-24' UNION ALL
                 SELECT 'Default Return',17,'Default return time. 00-24' UNION ALL

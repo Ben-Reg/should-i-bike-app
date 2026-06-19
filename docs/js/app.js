@@ -58,8 +58,10 @@ createApp({
       error.value = '';
       loading.value = true;
       try {
+        const zip = settings.value['Zip']?.value;
+        if (!zip) throw new Error('No zip code configured. Please set one in Settings.')
         const s = {
-          zip:          settings.value['Zip']?.value || '67114',
+          zip,
           country:      settings.value['Country']?.value || 'US',
           hoursReturned: Number(settings.value['Hours Returned']?.value || 48),
         };
@@ -95,8 +97,10 @@ createApp({
     async function loadForecast() {
       loading.value = true; error.value = '';
       try {
+        const zip = settings.value['Zip']?.value;
+        if (!zip) throw new Error('No zip code configured. Please set one in Settings.')
         const s = {
-          zip:          settings.value['Zip']?.value || '67114',
+          zip,
           country:      settings.value['Country']?.value || 'US',
           hoursReturned: Number(settings.value['Hours Returned']?.value || 48),
         };

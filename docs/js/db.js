@@ -24,7 +24,7 @@ async function seedDefaults() {
   const sCount = await db.settings.count();
   if (sCount === 0) {
     await db.settings.bulkAdd([
-      { name: 'Zip',               value: '67114', description: 'Zip code for the weather forecast' },
+      { name: 'Zip',               value: '', description: 'Zip code for the weather forecast' },
       { name: 'Country',           value: 'US',    description: 'Country code (US only currently)' },
       { name: 'Default Departure', value: '7',     description: 'Default departure time (0-24)' },
       { name: 'Default Return',    value: '17',    description: 'Default return time (0-24)' },
