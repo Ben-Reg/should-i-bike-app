@@ -281,8 +281,22 @@ createApp({
             groups: [{ operator: 'AND', elements: [{ rule_type: 'Rain Chance', operator: '>=', value: '50' }] }]
           },
           {
-            name: 'High Wind', trip_time: 'Departure', weight: 10,
-            groups: [{ operator: 'AND', elements: [{ rule_type: 'Wind Speed', operator: '>=', value: '20' }] }]
+            name: 'High North Wind', trip_time: 'Return', weight: 10,
+            groups: [
+              { operator: 'OR', elements: [
+                { rule_type: 'Wind Speed', operator: '>=', value: '20' },
+                { rule_type: 'Wind Gust', operator: '>=', value: '25' }
+            ] },
+            { operator: 'AND', elements: [{ rule_type: 'Wind Dir', operator: 'CONTAINS', value: 'N' }] }
+          ]
+          },
+          {
+            name: '(Reminder) Wear a jacket', trip_time: 'Departure', weight: 0,
+            groups: [{ operator: 'AND', elements: [{ rule_type: 'Temperature', operator: '<=', value: '50' }] }]
+          },
+          {
+            name: '(ALERT) Low visibility', trip_time: 'Departure', weight: 0,
+            groups: [{ operator: 'AND', elements: [{ rule_type: 'Visibility', operator: '<=', value: '13000' }] }]
           }
         ]);
         await loadRulesList();

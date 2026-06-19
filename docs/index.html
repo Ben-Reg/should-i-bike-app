@@ -155,10 +155,12 @@
       <p class="muted" style="line-height:1.6;margin-bottom:20px;text-align:left">
         A rule is tied to either your <strong>Departure</strong> or your <strong>Return</strong> trip. If you're a commuter who bikes North on the way to work and South on the way home, you can create a Departure rule for high North winds and a separate Return rule for high South winds.
       </p>
+      <p class="muted" style="line-height:1.6;margin-bottom:20px;text-align:left">
+        You can also use rules with a weight of zero as reminders or alerts. These will show up when weather conditions trigger them, but won't contribute to your score.  For example, a reminder to wear a jacket when the temperature is below 50.
+      </p>
       <button class="btn btn-primary btn-full" @click="createExampleRules" :disabled="creatingExamples">
         {{ creatingExamples ? 'Creating…' : 'Create Example Rules' }}
       </button>
-      <p class="muted" style="margin-top:10px;font-size:12px">Creates a Rain Risk rule (rain ≥ 50%) and a High Wind rule (wind ≥ 20 mph), each with weight 10.</p>
     </div>
 
     <div class="card" v-for="r in rules" :key="r.id" style="cursor:pointer" @click="navigate('/rules/'+r.id, {id:r.id})">
