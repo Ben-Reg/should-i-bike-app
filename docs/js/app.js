@@ -287,7 +287,7 @@ createApp({
                 { rule_type: 'Wind Speed', operator: '>=', value: '20' },
                 { rule_type: 'Wind Gust', operator: '>=', value: '25' }
             ] },
-            { operator: 'AND', elements: [{ rule_type: 'Wind Dir', operator: 'CONTAINS', value: 'N' }] }
+              { operator: 'AND', elements: [{ rule_type: 'Wind Direction', operator: 'CONTAINS', value: 'N' }] }
           ]
           },
           {
