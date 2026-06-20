@@ -40,10 +40,12 @@ createApp({
     }
 
     // ── home screen ──────────────────────────────────────────────────────────
-    const tomorrow = (() => {
-      const d = new Date(); d.setDate(d.getDate() + 1);
+    function toISODate(d) {
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    })();
+    }
+
+    const tomorrow = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return toISODate(d); })();
+    const maxDate  = (() => { const d = new Date(); d.setDate(d.getDate() + 6); return toISODate(d); })();
 
     const selectedDate      = ref(tomorrow);
     const departureHour     = ref(7);
@@ -359,7 +361,7 @@ createApp({
       route, routeParams, navigate,
       settings, ruleTypes, loading, error, settingsLoaded,
       // home
-      selectedDate, departureHour, returnHour, result, travelConditions, checkBike, tomorrow,
+      selectedDate, departureHour, returnHour, result, travelConditions, checkBike, tomorrow, maxDate,
       // forecast
       forecast, formatTime,
       // rules list

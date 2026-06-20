@@ -250,21 +250,27 @@ class CLI_Interface():
     def selectDate(self):
         """ Allows the user to select a date. """
 
-        tomorrow = datetime.now() + timedelta(days=1)
-        tomorrow = tomorrow.strftime("%m/%d/%Y")
-        prompt = ("Enter your travel date in mm/dd/yyyy format, or press Enter"
-                  f" to select {tomorrow}: "
-                  )
+        today = datetime.now().date()
+        tomorrow = today + timedelta(days=1)
+        max_date = today + timedelta(days=6)
+        tomorrow_str = tomorrow.strftime("%m/%d/%Y")
+        max_date_str = max_date.strftime("%m/%d/%Y")
+
+        prompt = (
+            f"Enter your travel date in mm/dd/yyyy format "
+            f"(up to {max_date_str}), or press Enter "
+            f"to select {tomorrow_str}: "
+        )
 
         while True:
             try:
                 date = input(prompt)
                 if date == "":
-                    return tomorrow
-                elif datetime.strptime(
-                    date,
-                    "%m/%d/%Y"
-                ):
+                    return tomorrow_str
+                parsed = datetime.strptime(date, "%m/%d/%Y").date()
+                if parsed > max_date:
+                    print(f"Please enter a date no later than {max_date_str}.")
+                else:
                     return date
             except ValueError:
                 print("Date check failed.")
