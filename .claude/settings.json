@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path // \"\"'); if echo \"$FILE\" | grep -qE 'should-i-bike/[^/]+\\.py$'; then echo '{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"You just edited a CLI file. Check if the same change is needed in the PWA (docs/js/).\"}}'; elif echo \"$FILE\" | grep -qE 'docs/js/'; then echo '{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"You just edited a PWA file. Check if the same change is needed in the CLI (should-i-bike/*.py).\"}}'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

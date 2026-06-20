@@ -146,7 +146,7 @@ class Weather():
         )
 
         # Match the timestamps in the Grid data.
-        # The [:25] strips off the '/PT1H' ending at the end
+        # The .split('/') strips off the '/PT1H' ending at the end
         # of the validTime string since datetime doesn't
         # know what to do with that.
         values = forecastGridData[element]['values']
@@ -158,24 +158,15 @@ class Weather():
         for value in values:
             i += 1
             # Add a python datetime element from the validTime
-            ct = datetime.strptime(
-                values[i]['validTime'][:25],
-                '%Y-%m-%dT%H:%M:%S%z'
-            )
+            start_str, duration_str = values[i]['validTime'].split('/')
+            ct = datetime.fromisoformat(start_str)
             values[i]['convertedTime'] = ct
 
             # Check how many hours this value lasts
-            rx = re.search(r"/PT([0-9]+)H", values[i]['validTime'])
-            if rx:
-                duration = rx.group(1)
-            else:
-                rx = re.search(
-                    r"/P([0-9]+)DT([0-9]+)H",
-                    values[i]['validTime']
-                )
-                days = int(rx.group(1))
-                hours = int(rx.group(2))
-                duration = (days * 24) + hours
+            rx = re.search(r"P(?:(\d+)D)?T(\d+)H", duration_str)
+            days = int(rx.group(1) or 0)
+            hours = int(rx.group(2))
+            duration = days * 24 + hours
 
             # Add extra entries if duration is longer than 1 hr
             # so that every hour will have an entry

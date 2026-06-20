@@ -43,14 +43,10 @@ async function fetchNoaaUrls(lat, lon) {
 function expandGridValues(gridElement) {
   const expanded = [];
   for (const entry of gridElement.values) {
-    const isoTime = entry.validTime.slice(0, 25);
-    const durationMatch = entry.validTime.match(/\/PT(\d+)H/) || entry.validTime.match(/\/P(\d+)DT(\d+)H/);
-    let hours = 1;
-    if (durationMatch) {
-      hours = durationMatch[2]
-        ? parseInt(durationMatch[1]) * 24 + parseInt(durationMatch[2])
-        : parseInt(durationMatch[1]);
-    }
+    const [isoTime, durationStr] = entry.validTime.split('/');
+    const durationMatch = durationStr.match(/P(?:(\d+)D)?T(\d+)H/);
+    const days = durationMatch ? parseInt(durationMatch[1] || 0) : 0;
+    const hours = durationMatch ? days * 24 + parseInt(durationMatch[2]) : 1;
     const base = new Date(isoTime);
     for (let h = 0; h < hours; h++) {
       const t = new Date(base.getTime() + h * 3600000);
