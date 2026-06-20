@@ -165,12 +165,12 @@ class Weather():
             values[i]['convertedTime'] = ct
 
             # Check how many hours this value lasts
-            rx = re.search("\/PT([0-9]+)H", values[i]['validTime'])
+            rx = re.search(r"/PT([0-9]+)H", values[i]['validTime'])
             if rx:
                 duration = rx.group(1)
             else:
                 rx = re.search(
-                    "\/P([0-9]+)DT([0-9]+)H",
+                    r"/P([0-9]+)DT([0-9]+)H",
                     values[i]['validTime']
                 )
                 days = int(rx.group(1))
